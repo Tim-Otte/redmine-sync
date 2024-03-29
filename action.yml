@@ -1,23 +1,22 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Redmine Sync'
+description:
+  'Retrieves ticket information from Redmine and updates your issues and pull
+  requests'
+author: 'Tim Otte'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: 'heart'
-  color: 'red'
+  icon: 'file-text'
+  color: 'gray-dark'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  redmine-url:
+    description: 'The URL of your Redmine instance'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+  redmine-api-key:
+    description: 'The API key for your Redmine instance'
+    required: true
 
 runs:
   using: node20

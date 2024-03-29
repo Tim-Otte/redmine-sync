@@ -24736,22 +24736,26 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const wait_1 = __nccwpck_require__(5259);
+const redmine_api_1 = __nccwpck_require__(9513);
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
     try {
-        const ms = core.getInput('milliseconds');
+        const redmineApi = new redmine_api_1.RedmineApi(core.getInput('redmine-url'), core.getInput('redmine-api_key'));
         // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`);
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString());
-        await (0, wait_1.wait)(parseInt(ms, 10));
-        core.debug(new Date().toTimeString());
-        // Set outputs for other workflow steps to use
-        core.setOutput('time', new Date().toTimeString());
+        core.debug(`Testing connection to redmine instance...`);
+        try {
+            const account = await redmineApi.myAccount();
+            core.info(`Successfully connected to Redmine. Hi ${account.firstname} ${account.lastname}!`);
+            if (account.admin)
+                core.warning('Its not recommended to use a Redmine admin account for this action');
+        }
+        catch {
+            core.setFailed('Could not connect to Redmine. Please check the url and the API key');
+            return;
+        }
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -24764,27 +24768,35 @@ exports.run = run;
 
 /***/ }),
 
-/***/ 5259:
+/***/ 9513:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
-/**
- * Wait for a number of milliseconds.
- * @param milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-    return new Promise(resolve => {
-        if (isNaN(milliseconds)) {
-            throw new Error('milliseconds not a number');
-        }
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
+exports.RedmineApi = void 0;
+class RedmineApi {
+    url;
+    apiKey;
+    constructor(url, apiKey) {
+        this.url = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+        this.apiKey = apiKey;
+    }
+    getApiUrl(path, params) {
+        if (params == undefined)
+            params = [];
+        params.push({ key: 'key', value: this.apiKey });
+        return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`;
+    }
+    async myAccount() {
+        const response = await fetch(this.getApiUrl('/my/account.json'));
+        if (response.ok)
+            return (await response.json());
+        else
+            throw new Error('Error while fetching account info');
+    }
 }
-exports.wait = wait;
+exports.RedmineApi = RedmineApi;
 
 
 /***/ }),
