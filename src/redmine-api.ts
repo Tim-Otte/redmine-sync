@@ -15,7 +15,7 @@ export class RedmineApi {
     path: string,
     params?: { key: string; value: string }[]
   ): string {
-    if (params == undefined) params = []
+    if (params === undefined) params = []
     params.push({ key: 'key', value: this.apiKey })
     return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
   }
@@ -26,7 +26,7 @@ export class RedmineApi {
       this.getApiUrl('/my/account.json')
     )
 
-    if (response.statusCode == HttpCodes.OK && response.result != null)
+    if (response.statusCode === HttpCodes.OK && response.result != null)
       return response.result
     else throw new Error('Error while fetching account info')
   }
@@ -37,8 +37,8 @@ export class RedmineApi {
       this.getApiUrl(`/issues/${number}.json`)
     )
 
-    if (response.statusCode == HttpCodes.OK) return response.result
-    else if (response.statusCode == HttpCodes.NotFound) return null
+    if (response.statusCode === HttpCodes.OK) return response.result
+    else if (response.statusCode === HttpCodes.NotFound) return null
     else throw new Error(`Error while fetching issue ${number}`)
   }
 }

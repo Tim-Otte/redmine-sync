@@ -4641,7 +4641,7 @@ class Cache {
           }
         } else if (operation.type === 'put') { // 4.2.6
           // 4.2.6.1
-          if (operation.response == null) {
+          if (operation.response === null) {
             throw webidl.errors.exception({
               header: 'Cache.#batchCacheOperations',
               message: 'put operation should have an associated response'
@@ -4763,7 +4763,7 @@ class Cache {
     }
 
     if (
-      response == null ||
+      response === null ||
       options?.ignoreVary ||
       !response.headersList.contains('vary')
     ) {
@@ -5346,9 +5346,9 @@ class Client extends DispatcherBase {
     this[kSocket] = null
     this[kPipelining] = pipelining != null ? pipelining : 1
     this[kMaxHeadersSize] = maxHeaderSize || http.maxHeaderSize
-    this[kKeepAliveDefaultTimeout] = keepAliveTimeout == null ? 4e3 : keepAliveTimeout
-    this[kKeepAliveMaxTimeout] = keepAliveMaxTimeout == null ? 600e3 : keepAliveMaxTimeout
-    this[kKeepAliveTimeoutThreshold] = keepAliveTimeoutThreshold == null ? 1e3 : keepAliveTimeoutThreshold
+    this[kKeepAliveDefaultTimeout] = keepAliveTimeout === null ? 4e3 : keepAliveTimeout
+    this[kKeepAliveMaxTimeout] = keepAliveMaxTimeout === null ? 600e3 : keepAliveMaxTimeout
+    this[kKeepAliveTimeoutThreshold] = keepAliveTimeoutThreshold === null ? 1e3 : keepAliveTimeoutThreshold
     this[kKeepAliveTimeoutValue] = this[kKeepAliveDefaultTimeout]
     this[kServerName] = null
     this[kLocalAddress] = localAddress != null ? localAddress : null
@@ -5357,7 +5357,7 @@ class Client extends DispatcherBase {
     this[kHostHeader] = `host: ${this[kUrl].hostname}${this[kUrl].port ? `:${this[kUrl].port}` : ''}\r\n`
     this[kBodyTimeout] = bodyTimeout != null ? bodyTimeout : 300e3
     this[kHeadersTimeout] = headersTimeout != null ? headersTimeout : 300e3
-    this[kStrictContentLength] = strictContentLength == null ? true : strictContentLength
+    this[kStrictContentLength] = strictContentLength === null ? true : strictContentLength
     this[kMaxRedirections] = maxRedirections
     this[kMaxRequests] = maxRequestsPerClient
     this[kClosedResolve] = null
@@ -5439,7 +5439,7 @@ class Client extends DispatcherBase {
     this[kQueue].push(request)
     if (this[kResuming]) {
       // Do nothing.
-    } else if (util.bodyLength(request.body) == null && util.isIterable(request.body)) {
+    } else if (util.bodyLength(request.body) === null && util.isIterable(request.body)) {
       // Wait a tick in case stream/iterator is ended in the same tick.
       this[kResuming] = 1
       process.nextTick(resume, this)
@@ -5694,7 +5694,7 @@ class Parser {
     }
 
     assert(this.ptr != null)
-    assert(currentParser == null)
+    assert(currentParser === null)
 
     this.llhttp.llhttp_resume(this.ptr)
 
@@ -5723,7 +5723,7 @@ class Parser {
 
   execute (data) {
     assert(this.ptr != null)
-    assert(currentParser == null)
+    assert(currentParser === null)
     assert(!this.paused)
 
     const { socket, llhttp } = this
@@ -5785,7 +5785,7 @@ class Parser {
 
   destroy () {
     assert(this.ptr != null)
-    assert(currentParser == null)
+    assert(currentParser === null)
 
     this.llhttp.llhttp_free(this.ptr)
     this.ptr = null
@@ -6807,7 +6807,7 @@ function writeH2 (client, session, request) {
 
   let contentLength = util.bodyLength(body)
 
-  if (contentLength == null) {
+  if (contentLength === null) {
     contentLength = request.contentLength
   }
 
@@ -8336,8 +8336,8 @@ function buildConnector ({ allowH2, maxCachedSessions, socketPath, timeout, ...o
   }
 
   const options = { path: socketPath, ...opts }
-  const sessionCache = new SessionCache(maxCachedSessions == null ? 100 : maxCachedSessions)
-  timeout = timeout == null ? 10e3 : timeout
+  const sessionCache = new SessionCache(maxCachedSessions === null ? 100 : maxCachedSessions)
+  timeout = timeout === null ? 10e3 : timeout
   allowH2 = allowH2 != null ? allowH2 : false
   return function connect ({ hostname, host, protocol, port, servername, localAddress, httpSocket }, callback) {
     let socket
@@ -8382,7 +8382,7 @@ function buildConnector ({ allowH2, maxCachedSessions, socketPath, timeout, ...o
     }
 
     // Set TCP keep alive options on the socket here instead of in connect() for the case of assigning the socket
-    if (options.keepAlive == null || options.keepAlive) {
+    if (options.keepAlive === null || options.keepAlive) {
       const keepAliveInitialDelay = options.keepAliveInitialDelay === undefined ? 60e3 : options.keepAliveInitialDelay
       socket.setKeepAlive(true, keepAliveInitialDelay)
     }
@@ -8806,7 +8806,7 @@ class Request {
 
     this.abort = null
 
-    if (body == null) {
+    if (body === null) {
       this.body = null
     } else if (util.isStream(body)) {
       this.body = body
@@ -8851,13 +8851,13 @@ class Request {
 
     this.origin = origin
 
-    this.idempotent = idempotent == null
+    this.idempotent = idempotent === null
       ? method === 'HEAD' || method === 'GET'
       : idempotent
 
-    this.blocking = blocking == null ? false : blocking
+    this.blocking = blocking === null ? false : blocking
 
-    this.reset = reset == null ? null : reset
+    this.reset = reset === null ? null : reset
 
     this.host = null
 
@@ -8897,13 +8897,13 @@ class Request {
       }
 
       const [bodyStream, contentType] = extractBody(body)
-      if (this.contentType == null) {
+      if (this.contentType === null) {
         this.contentType = contentType
         this.headers += `content-type: ${contentType}\r\n`
       }
       this.body = bodyStream.stream
       this.contentLength = bodyStream.length
-    } else if (util.isBlobLike(body) && this.contentType == null && body.type) {
+    } else if (util.isBlobLike(body) && this.contentType === null && body.type) {
       this.contentType = body.type
       this.headers += `content-type: ${body.type}\r\n`
     }
@@ -9081,7 +9081,7 @@ class Request {
     for (const header of rawHeaders) {
       const [key, value] = header.split(': ')
 
-      if (value == null || value.length === 0) continue
+      if (value === null || value.length === 0) continue
 
       if (headers[key]) headers[key] += `,${value}`
       else headers[key] = value
@@ -9433,7 +9433,7 @@ function isIterable (obj) {
 }
 
 function bodyLength (body) {
-  if (body == null) {
+  if (body === null) {
     return 0
   } else if (isStream(body)) {
     const state = body._readableState
@@ -9459,7 +9459,7 @@ function isReadableAborted (stream) {
 }
 
 function destroy (stream, err) {
-  if (stream == null || !isStream(stream) || isDestroyed(stream)) {
+  if (stream === null || !isStream(stream) || isDestroyed(stream)) {
     return
   }
 
@@ -9727,7 +9727,7 @@ function toUSVString (val) {
 // Parsed accordingly to RFC 9110
 // https://www.rfc-editor.org/rfc/rfc9110#field.content-range
 function parseRangeHeader (range) {
-  if (range == null || range === '') return { start: 0, end: null, size: null }
+  if (range === null || range === '') return { start: 0, end: null, size: null }
 
   const m = range ? range.match(/^bytes (\d+)-(\d+)\/(\d+)?$/) : null
   return m
@@ -10542,7 +10542,7 @@ async function specConsumeBody (object, convertBytesToJSValue, instance) {
 
   // 5. If object’s body is null, then run successSteps with an
   //    empty byte sequence.
-  if (object[kState].body == null) {
+  if (object[kState].body === null) {
     successSteps(new Uint8Array())
     return promise.promise
   }
@@ -13040,7 +13040,7 @@ function abortFetch (p, request, responseObject, error) {
   }
 
   // 3. If responseObject is null, then return.
-  if (responseObject == null) {
+  if (responseObject === null) {
     return
   }
 
@@ -13437,7 +13437,7 @@ async function mainFetch (fetchParams, recursive = false) {
 
     // 2. If request’s response tainting is "opaque", or response’s body is null,
     // then run processBodyError and abort these steps.
-    if (request.responseTainting === 'opaque' || response.body == null) {
+    if (request.responseTainting === 'opaque' || response.body === null) {
       processBodyError(response.error)
       return
     }
@@ -13632,7 +13632,7 @@ function fetchFinale (fetchParams, response) {
   }
 
   // 4. If response’s body is null, then run processResponseEndOfBody.
-  if (response.body == null) {
+  if (response.body === null) {
     processResponseEndOfBody()
   } else {
   // 5. Otherwise:
@@ -13677,7 +13677,7 @@ function fetchFinale (fetchParams, response) {
 
     // 3. If response’s body is null, then queue a fetch task to run processBody
     // given null, with fetchParams’s task destination.
-    if (response.body == null) {
+    if (response.body === null) {
       queueMicrotask(() => processBody(null))
     } else {
       // 4. Otherwise, fully read response’s body given processBody, processBodyError,
@@ -13813,7 +13813,7 @@ function httpRedirectFetch (fetchParams, response) {
     )
 
     // 4. If locationURL is null, then return response.
-    if (locationURL == null) {
+    if (locationURL === null) {
       return response
     }
   } catch (err) {
@@ -13862,7 +13862,7 @@ function httpRedirectFetch (fetchParams, response) {
   if (
     actualResponse.status !== 303 &&
     request.body != null &&
-    request.body.source == null
+    request.body.source === null
   ) {
     return Promise.resolve(makeNetworkError())
   }
@@ -13999,7 +13999,7 @@ async function httpNetworkOrCacheFetch (
   //    6. If httpRequest’s body is null and httpRequest’s method is `POST` or
   //    `PUT`, then set contentLengthHeaderValue to `0`.
   if (
-    httpRequest.body == null &&
+    httpRequest.body === null &&
     ['POST', 'PUT'].includes(httpRequest.method)
   ) {
     contentLengthHeaderValue = '0'
@@ -14126,7 +14126,7 @@ async function httpNetworkOrCacheFetch (
 
   //    23. If httpCache is null, then set httpRequest’s cache mode to
   //    "no-store".
-  if (httpCache == null) {
+  if (httpCache === null) {
     httpRequest.cache = 'no-store'
   }
 
@@ -14140,7 +14140,7 @@ async function httpNetworkOrCacheFetch (
   // TODO
 
   // 10. If response is null, then:
-  if (response == null) {
+  if (response === null) {
     // 1. If httpRequest’s cache mode is "only-if-cached", then return a
     // network error.
     if (httpRequest.mode === 'only-if-cached') {
@@ -14174,7 +14174,7 @@ async function httpNetworkOrCacheFetch (
     }
 
     // 5. If response is null, then:
-    if (response == null) {
+    if (response === null) {
       // 1. Set response to forwardResponse.
       response = forwardResponse
 
@@ -14232,7 +14232,7 @@ async function httpNetworkOrCacheFetch (
     // isNewConnectionFetch is false
     !isNewConnectionFetch &&
     // request’s body is null, or request’s body is non-null and request’s body’s source is non-null
-    (request.body == null || request.body.source != null)
+    (request.body === null || request.body.source != null)
   ) {
     // then:
 
@@ -14299,7 +14299,7 @@ async function httpNetworkFetch (
   const httpCache = null
 
   // 5. If httpCache is null, then set request’s cache mode to "no-store".
-  if (httpCache == null) {
+  if (httpCache === null) {
     request.cache = 'no-store'
   }
 
@@ -14380,7 +14380,7 @@ async function httpNetworkFetch (
   // 1. If body is null and fetchParams’s process request end-of-body is
   // non-null, then queue a fetch task given fetchParams’s process request
   // end-of-body and fetchParams’s task destination.
-  if (request.body == null && fetchParams.processRequestEndOfBody) {
+  if (request.body === null && fetchParams.processRequestEndOfBody) {
     queueMicrotask(() => fetchParams.processRequestEndOfBody())
   } else if (request.body != null) {
     // 2. Otherwise, if body is non-null:
@@ -15331,10 +15331,10 @@ class Request {
 
     // 38. If inputOrInitBody is non-null and inputOrInitBody’s source is
     // null, then:
-    if (inputOrInitBody != null && inputOrInitBody.source == null) {
+    if (inputOrInitBody != null && inputOrInitBody.source === null) {
       // 1. If initBody is non-null and init["duplex"] does not exist,
       //    then throw a TypeError.
-      if (initBody != null && init.duplex == null) {
+      if (initBody != null && init.duplex === null) {
         throw new TypeError('RequestInit: duplex option is required when sending a body.')
       }
 
@@ -15354,7 +15354,7 @@ class Request {
     let finalBody = inputOrInitBody
 
     // 40. If initBody is null and inputBody is non-null, then:
-    if (initBody == null && inputBody != null) {
+    if (initBody === null && inputBody != null) {
       // 1. If input is unusable, then throw a TypeError.
       if (util.isDisturbed(inputBody.stream) || inputBody.stream.locked) {
         throw new TypeError(
@@ -16897,7 +16897,7 @@ function isURLPotentiallyTrustworthy (url) {
 
   function isOriginPotentiallyTrustworthy (origin) {
     // If origin is explicitly null, return false
-    if (origin == null || origin === 'null') return false
+    if (origin === null || origin === 'null') return false
 
     const originAsURL = new URL(origin)
 
@@ -19576,7 +19576,7 @@ function cleanRequestHeaders (headers, removeContent, unknownOrigin) {
       }
     }
   } else {
-    assert(headers == null, 'headers must be an object or an array')
+    assert(headers === null, 'headers must be an object or an array')
   }
   return ret
 }
@@ -19806,18 +19806,18 @@ class RetryHandler {
       const { start, size, end = size } = contentRange
 
       assert(this.start === start, 'content-range mismatch')
-      assert(this.end == null || this.end === end, 'content-range mismatch')
+      assert(this.end === null || this.end === end, 'content-range mismatch')
 
       this.resume = resume
       return true
     }
 
-    if (this.end == null) {
+    if (this.end === null) {
       if (statusCode === 206) {
         // First time we receive 206
         const range = parseRangeHeader(headers['content-range'])
 
-        if (range == null) {
+        if (range === null) {
           return this.handler.onHeaders(
             statusCode,
             rawHeaders,
@@ -19843,14 +19843,14 @@ class RetryHandler {
       }
 
       // We make our best to checkpoint the body for further range headers
-      if (this.end == null) {
+      if (this.end === null) {
         const contentLength = headers['content-length']
         this.end = contentLength != null ? Number(contentLength) : null
       }
 
       assert(Number.isFinite(this.start))
       assert(
-        this.end == null || Number.isFinite(this.end),
+        this.end === null || Number.isFinite(this.end),
         'invalid content-length'
       )
 
@@ -24402,15 +24402,15 @@ function v1(options, buf, offset) {
   // specified.  We do this lazily to minimize issues related to insufficient
   // system entropy.  See #189
 
-  if (node == null || clockseq == null) {
+  if (node === null || clockseq === null) {
     const seedBytes = options.random || (options.rng || _rng.default)();
 
-    if (node == null) {
+    if (node === null) {
       // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
       node = _nodeId = [seedBytes[0] | 0x01, seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]];
     }
 
-    if (clockseq == null) {
+    if (clockseq === null) {
       // Per 4.2.2, randomize (14 bit) clockseq
       clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
     }
@@ -24783,7 +24783,7 @@ class RedmineApi {
         this.apiKey = apiKey;
     }
     getApiUrl(path, params) {
-        if (params == undefined)
+        if (params === undefined)
             params = [];
         params.push({ key: 'key', value: this.apiKey });
         return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`;
@@ -25472,9 +25472,9 @@ SBMH.prototype._sbmh_feed = function (data) {
   const lastNeedleChar = needle[needleLength - 1]
 
   // Positive: points to a position in `data`
-  //           pos == 3 points to data[3]
+  //           pos === 3 points to data[3]
   // Negative: points to a position in the lookbehind buffer
-  //           pos == -2 points to lookbehind[lookbehind_size - 2]
+  //           pos === -2 points to lookbehind[lookbehind_size - 2]
   let pos = -this._lookbehind_size
   let ch
 
@@ -25517,7 +25517,7 @@ SBMH.prototype._sbmh_feed = function (data) {
       //   the trailing part of lookbehind + data
       //   looks like the beginning of the needle
       // or until
-      //   pos == 0
+      //   pos === 0
       while (pos < 0 && !this._sbmh_memcmp(data, pos, len - pos)) { ++pos }
     }
 

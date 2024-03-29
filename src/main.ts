@@ -13,7 +13,7 @@ export async function run(): Promise<void> {
     let issueNumber: number | null = null
     let pullNumber: number | null = null
 
-    if (context.eventName == 'pull_request') {
+    if (context.eventName === 'pull_request') {
       core.debug(
         'This GitHub action has been started because a pull_request event has been triggered'
       )
@@ -24,7 +24,7 @@ export async function run(): Promise<void> {
       }
     }
 
-    if (pullNumber == null) {
+    if (pullNumber === null) {
       core.setFailed('Could not find the number of the pull request')
       return
     }
@@ -37,7 +37,7 @@ export async function run(): Promise<void> {
       pull_number: pullNumber
     })
 
-    if (pullRequest.status == HttpCodes.OK) {
+    if (pullRequest.status === HttpCodes.OK) {
       core.debug(
         `Found pull request ${pullRequest.data.id} with title '${pullRequest.data.title}'`
       )
@@ -49,7 +49,7 @@ export async function run(): Promise<void> {
       }
     }
 
-    if (issueNumber == null) {
+    if (issueNumber === null) {
       core.info('Could not find ticket number. Exiting...')
       return
     }
@@ -79,7 +79,7 @@ export async function run(): Promise<void> {
 
     // Fetching the infos for the issue
     const issue = await redmineApi.getIssue(issueNumber)
-    if (issue == null) {
+    if (issue === null) {
       core.info(`Could not find Redmine issue ${issueNumber}`)
     } else {
       const updateStatus = await getOctokit(
@@ -92,7 +92,7 @@ export async function run(): Promise<void> {
         body: issue.description
       })
 
-      if (updateStatus.status == HttpCodes.OK) {
+      if (updateStatus.status === HttpCodes.OK) {
         core.info(`Successfully updated pull request #${pullNumber}`)
       }
     }
