@@ -29013,68 +29013,25 @@ const http_client_1 = __nccwpck_require__(6255);
 async function run() {
     // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
     try {
-        let issueNumber = null;
-        let pullNumber = null;
-        if (github_1.context.eventName === 'pull_request') {
-            core.debug('This GitHub action has been started because a pull_request event has been triggered');
-            const result = /refs\/pull\/(\d+)\/merge/g.exec(github_1.context.ref);
-            if (result != null) {
-                const [, pullRequestIdText] = result;
-                pullNumber = parseInt(pullRequestIdText);
-            }
-        }
+        const pullNumber = getPullNumber();
         if (pullNumber === null) {
             core.setFailed('Could not find the number of the pull request');
             return;
         }
-        const pullRequest = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN')).rest.pulls.get({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            pull_number: pullNumber
-        });
-        if (pullRequest.status === http_client_1.HttpCodes.OK) {
-            core.debug(`Found pull request ${pullRequest.data.id} with title '${pullRequest.data.title}'`);
-            const result = /#(\d+)/g.exec(pullRequest.data.title);
-            if (result != null) {
-                const [, issueNumberText] = result[0];
-                issueNumber = parseInt(issueNumberText);
-            }
-        }
+        const issueNumber = await getIssueNumberFromPullRequest(pullNumber);
         if (issueNumber === null) {
             core.info('Could not find ticket number. Exiting...');
             return;
         }
-        core.debug('Initializing Redmine API...');
-        const redmineApi = new redmine_api_1.RedmineApi(core.getInput('redmine-url'), core.getInput('redmine-api_key'));
-        core.debug(`Testing connection to redmine instance...`);
-        try {
-            const account = await redmineApi.myAccount();
-            core.info(`Successfully connected to Redmine. Hi ${account.firstname} ${account.lastname}!`);
-            if (account.admin)
-                core.warning('Its not recommended to use a Redmine admin account for this action');
-        }
-        catch (error) {
-            let errorMessage = 'Could not connect to Redmine. Please check the url and the API key.';
-            if (error instanceof Error)
-                errorMessage += `\n${error.message}`;
-            throw new Error(errorMessage);
-        }
+        const redmineApi = getRemineApi();
+        await testRedmineApi(redmineApi);
         // Fetching the infos for the issue
         const issue = await redmineApi.getIssue(issueNumber);
         if (issue === null) {
             core.info(`Could not find Redmine issue ${issueNumber}`);
         }
         else {
-            const updateStatus = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN')).rest.pulls.update({
-                owner: github_1.context.repo.owner,
-                repo: github_1.context.repo.repo,
-                pull_number: pullNumber,
-                title: `#${issueNumber} ${issue.subject}`,
-                body: issue.description
-            });
-            if (updateStatus.status === http_client_1.HttpCodes.OK) {
-                core.info(`Successfully updated pull request #${pullNumber}`);
-            }
+            await updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue);
         }
     }
     catch (error) {
@@ -29084,12 +29041,64 @@ async function run() {
     }
 }
 exports.run = run;
-function parsePullRequestId(githubRef) {
-    const result = /refs\/pull\/(\d+)\/merge/g.exec(githubRef);
-    if (!result)
-        throw new Error('Reference not found.');
-    const [, pullRequestId] = result;
-    return parseInt(pullRequestId);
+async function updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue) {
+    const updateStatus = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN')).rest.pulls.update({
+        owner: github_1.context.repo.owner,
+        repo: github_1.context.repo.repo,
+        pull_number: pullNumber,
+        title: `#${issueNumber} ${issue.subject}`,
+        body: issue.description
+    });
+    if (updateStatus.status === http_client_1.HttpCodes.OK) {
+        core.info(`Successfully updated pull request #${pullNumber}`);
+    }
+}
+async function testRedmineApi(redmineApi) {
+    core.debug(`Testing connection to redmine instance...`);
+    try {
+        const account = await redmineApi.myAccount();
+        core.info(`Successfully connected to Redmine. Hi ${account.firstname} ${account.lastname}!`);
+        if (account.admin)
+            core.warning('Its not recommended to use a Redmine admin account for this action');
+    }
+    catch (error) {
+        let errorMessage = 'Could not connect to Redmine. Please check the url and the API key.';
+        if (error instanceof Error)
+            errorMessage += `\n${error.message}`;
+        throw new Error(errorMessage);
+    }
+}
+function getRemineApi() {
+    core.debug('Initializing Redmine API...');
+    const redmineApi = new redmine_api_1.RedmineApi(core.getInput('redmine-url'), core.getInput('redmine-api_key'));
+    return redmineApi;
+}
+async function getIssueNumberFromPullRequest(pullNumber) {
+    const pullRequest = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN')).rest.pulls.get({
+        owner: github_1.context.repo.owner,
+        repo: github_1.context.repo.repo,
+        pull_number: pullNumber
+    });
+    if (pullRequest.status === http_client_1.HttpCodes.OK) {
+        core.debug(`Found pull request ${pullRequest.data.id} with title '${pullRequest.data.title}'`);
+        const result = /#(\d+)/g.exec(pullRequest.data.title);
+        if (result != null) {
+            const [, issueNumberText] = result[0];
+            return parseInt(issueNumberText);
+        }
+    }
+    return null;
+}
+function getPullNumber() {
+    if (github_1.context.eventName === 'pull_request') {
+        core.debug('This GitHub action has been started because a pull_request event has been triggered');
+        const result = /refs\/pull\/(\d+)\/merge/g.exec(github_1.context.ref);
+        if (result != null) {
+            const [, pullRequestIdText] = result;
+            return parseInt(pullRequestIdText);
+        }
+    }
+    return null;
 }
 
 
