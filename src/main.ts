@@ -71,10 +71,11 @@ export async function run(): Promise<void> {
         core.warning(
           'Its not recommended to use a Redmine admin account for this action'
         )
-    } catch {
-      throw new Error(
-        'Could not connect to Redmine. Please check the url and the API key'
-      )
+    } catch (error) {
+      let errorMessage =
+        'Could not connect to Redmine. Please check the url and the API key.'
+      if (error instanceof Error) errorMessage += `\n${error.message}`
+      throw new Error(errorMessage)
     }
 
     // Fetching the infos for the issue
