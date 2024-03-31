@@ -46,7 +46,7 @@ async function updatePullRequestFromRedmineIssue(
   pullNumber: number,
   issueNumber: number,
   issue: Issue
-) {
+): Promise<void> {
   const updateStatus = await getOctokit(
     core.getInput('GITHUB_TOKEN')
   ).rest.pulls.update({
@@ -62,7 +62,7 @@ async function updatePullRequestFromRedmineIssue(
   }
 }
 
-async function testRedmineApi(redmineApi: RedmineApi) {
+async function testRedmineApi(redmineApi: RedmineApi): Promise<void> {
   core.debug(`Testing connection to redmine instance...`)
   try {
     const account = await redmineApi.myAccount()
@@ -82,7 +82,7 @@ async function testRedmineApi(redmineApi: RedmineApi) {
   }
 }
 
-function getRemineApi() {
+function getRemineApi(): RedmineApi {
   core.debug('Initializing Redmine API...')
   const redmineApi = new RedmineApi(
     core.getInput('redmine-url'),

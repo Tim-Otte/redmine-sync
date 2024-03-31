@@ -20,7 +20,7 @@ export class RedmineApi {
     return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
   }
 
-  public async myAccount(): Promise<MyAccount> {
+  async myAccount(): Promise<MyAccount> {
     const httpClient = new HttpClient()
     const response = await httpClient.getJson<MyAccount>(
       this.getApiUrl('/my/account.json')
@@ -31,7 +31,7 @@ export class RedmineApi {
     else throw new Error('Error while fetching account info')
   }
 
-  public async getIssue(number: number): Promise<Issue | null> {
+  async getIssue(number: number): Promise<Issue | null> {
     const httpClient = new HttpClient()
     const response = await httpClient.getJson<Issue>(
       this.getApiUrl(`/issues/${number}.json`)

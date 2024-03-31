@@ -28,8 +28,18 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
+      - name: Cache npm dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install Dependencies
         id: npm-ci
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Check Format
@@ -43,19 +53,3 @@ jobs:
       - name: Test
         id: npm-ci-test
         run: npm run ci-test
-
-  test-action:
-    name: GitHub Actions Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v4
-
-      - name: Test Local Action
-        id: test-action
-        uses: ./
-        with:
-          redmine-url: ${{ secrets.REDMINE_URL }}
-          redmine-api-key: ${{ secrets.REDMINE_API_KEY }}

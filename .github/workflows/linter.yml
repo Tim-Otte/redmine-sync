@@ -32,8 +32,18 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
+      - name: Cache npm dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install Dependencies
         id: install
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Lint Codebase
