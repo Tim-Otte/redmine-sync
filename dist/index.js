@@ -29005,6 +29005,7 @@ exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const redmine_api_1 = __nccwpck_require__(9513);
+const markdown = __importStar(__nccwpck_require__(4270));
 const http_client_1 = __nccwpck_require__(6255);
 /**
  * The main function for the action.
@@ -29013,26 +29014,37 @@ const http_client_1 = __nccwpck_require__(6255);
 async function run() {
     // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
     try {
-        const pullNumber = getPullNumber();
-        if (pullNumber === null) {
-            core.setFailed('Could not find the number of the pull request');
+        const REDMINE_URL = core.getInput('redmine-url', { required: true });
+        const REDMINE_API_KEY = core.getInput('redmine-api-key', { required: true });
+        const GITHUB_TOKEN = core.getInput('GITHUB_TOKEN', { required: true });
+        core.startGroup('Checking action type');
+        const pullRequest = github_1.context.payload.pull_request;
+        if (pullRequest === undefined) {
+            core.setFailed('This action can only be run on Pull Requests');
             return;
         }
-        const issueNumber = await getIssueNumberFromPullRequest(pullNumber);
+        core.endGroup();
+        core.startGroup('Fetching pull request info');
+        const issueNumber = await getIssueNumberFromPullRequest(pullRequest.number);
         if (issueNumber === null) {
             core.info('Could not find ticket number. Exiting...');
             return;
         }
-        const redmineApi = getRemineApi();
+        core.endGroup();
+        core.startGroup('Redmine API setup/test');
+        const redmineApi = new redmine_api_1.RedmineApi(REDMINE_URL, REDMINE_API_KEY);
         await testRedmineApi(redmineApi);
+        core.endGroup();
         // Fetching the infos for the issue
+        core.startGroup('Retrieve issue from Redmine and update pull request');
         const issue = await redmineApi.getIssue(issueNumber);
         if (issue === null) {
             core.info(`Could not find Redmine issue ${issueNumber}`);
         }
         else {
-            await updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue);
+            await updatePullRequestFromRedmineIssue(GITHUB_TOKEN, redmineApi.getUrl(), pullRequest.number, issue);
         }
+        core.endGroup();
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -29041,16 +29053,45 @@ async function run() {
     }
 }
 exports.run = run;
-async function updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue) {
-    const updateStatus = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN', { required: true })).rest.pulls.update({
+async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, issue) {
+    const updateStatus = await (0, github_1.getOctokit)(token).rest.pulls.update({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         pull_number: pullNumber,
-        title: `#${issueNumber} ${issue.issue.subject}`,
-        body: issue.issue.description
+        title: `${issue.issue.tracker.name} #${issue.issue.id}: ${issue.issue.subject}`,
+        body: markdown.noteAlert(`**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`) +
+            markdown.LF +
+            issue.issue.description
     });
     if (updateStatus.status === http_client_1.HttpCodes.OK) {
         core.info(`Successfully updated pull request #${pullNumber}`);
+    }
+    else {
+        return;
+    }
+    const label = getLabelFromIssue(issue);
+    if (label !== null) {
+        const labelUpdateStatus = await (0, github_1.getOctokit)(token).rest.issues.addLabels({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            issue_number: pullNumber,
+            labels: [label]
+        });
+        if (labelUpdateStatus.status === http_client_1.HttpCodes.OK) {
+            core.info(`Successfully updated label for pull request #${pullNumber}`);
+        }
+    }
+}
+function getLabelFromIssue(issue) {
+    switch (issue.issue.tracker.name) {
+        case 'Change Request':
+            return 'change';
+        case 'Feature':
+            return 'feature';
+        case 'Bug':
+            return 'bug';
+        default:
+            return null;
     }
 }
 async function testRedmineApi(redmineApi) {
@@ -29068,11 +29109,6 @@ async function testRedmineApi(redmineApi) {
         throw new Error(errorMessage);
     }
 }
-function getRemineApi() {
-    core.debug('Initializing Redmine API...');
-    const redmineApi = new redmine_api_1.RedmineApi(core.getInput('redmine-url', { required: true }), core.getInput('redmine-api-key', { required: true }));
-    return redmineApi;
-}
 async function getIssueNumberFromPullRequest(pullNumber) {
     const pullRequest = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN', { required: true })).rest.pulls.get({
         owner: github_1.context.repo.owner,
@@ -29083,23 +29119,32 @@ async function getIssueNumberFromPullRequest(pullNumber) {
         core.debug(`Found pull request ${pullRequest.data.id} with title '${pullRequest.data.title}'`);
         const result = /#(\d+)/g.exec(pullRequest.data.title);
         if (result != null) {
-            const [, issueNumberText] = result[0];
+            const [, issueNumberText] = result;
             return parseInt(issueNumberText);
         }
     }
     return null;
 }
-function getPullNumber() {
-    if (github_1.context.eventName === 'pull_request') {
-        core.debug('This GitHub action has been started because a pull_request event has been triggered');
-        const result = /refs\/pull\/(\d+)\/merge/g.exec(github_1.context.ref);
-        if (result != null) {
-            const [, pullRequestIdText] = result;
-            return parseInt(pullRequestIdText);
-        }
-    }
-    return null;
+
+
+/***/ }),
+
+/***/ 4270:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.link = exports.noteAlert = exports.LF = void 0;
+exports.LF = '\n\n';
+function noteAlert(text) {
+    return `> [!NOTE]${exports.LF}> ${text}`;
 }
+exports.noteAlert = noteAlert;
+function link(label, url) {
+    return `[${label}](${url})`;
+}
+exports.link = link;
 
 
 /***/ }),
@@ -29145,6 +29190,9 @@ class RedmineApi {
             return null;
         else
             throw new Error(`Error while fetching issue ${number}`);
+    }
+    getUrl() {
+        return this.url;
     }
 }
 exports.RedmineApi = RedmineApi;
