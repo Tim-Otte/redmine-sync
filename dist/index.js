@@ -29025,7 +29025,7 @@ async function run() {
         }
         core.endGroup();
         core.startGroup('Fetching pull request info');
-        const issueNumber = await getIssueNumberFromPullRequest(pullRequest.number);
+        const issueNumber = await getIssueNumberFromPullRequest(GITHUB_TOKEN, pullRequest.number);
         if (issueNumber === null) {
             core.info('Could not find ticket number. Exiting...');
             return;
@@ -29060,15 +29060,14 @@ async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, 
         pull_number: pullNumber,
         title: `${issue.issue.tracker.name} #${issue.issue.id}: ${issue.issue.subject}`,
         body: markdown.noteAlert(`**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`) +
-            markdown.LF +
+            markdown.LINE_BREAK +
             issue.issue.description
     });
     if (updateStatus.status === http_client_1.HttpCodes.OK) {
         core.info(`Successfully updated pull request #${pullNumber}`);
     }
-    else {
+    else
         return;
-    }
     const label = getLabelFromIssue(issue);
     if (label !== null) {
         const labelUpdateStatus = await (0, github_1.getOctokit)(token).rest.issues.addLabels({
@@ -29109,8 +29108,8 @@ async function testRedmineApi(redmineApi) {
         throw new Error(errorMessage);
     }
 }
-async function getIssueNumberFromPullRequest(pullNumber) {
-    const pullRequest = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN', { required: true })).rest.pulls.get({
+async function getIssueNumberFromPullRequest(token, pullNumber) {
+    const pullRequest = await (0, github_1.getOctokit)(token).rest.pulls.get({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         pull_number: pullNumber
@@ -29135,12 +29134,30 @@ async function getIssueNumberFromPullRequest(pullNumber) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.link = exports.noteAlert = exports.LF = void 0;
-exports.LF = '\n\n';
+exports.link = exports.noteAlert = exports.LINE_BREAK = exports.LF = void 0;
+/**
+ * Line feed
+ */
+exports.LF = '\n';
+/**
+ * A markdown compatible line break
+ */
+exports.LINE_BREAK = exports.LF + exports.LF;
+/**
+ * Create a note alert
+ * @param text The text to display in the note
+ * @returns The GitHub markdown string for a note alert
+ */
 function noteAlert(text) {
     return `> [!NOTE]${exports.LF}> ${text}`;
 }
 exports.noteAlert = noteAlert;
+/**
+ * Create a link
+ * @param label The text to display in the link
+ * @param url The url of the link
+ * @returns The GitHub markdown string for a link
+ */
 function link(label, url) {
     return `[${label}](${url})`;
 }
@@ -29165,6 +29182,12 @@ class RedmineApi {
         this.url = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
         this.apiKey = apiKey;
     }
+    /**
+     * Creates an API url for the given `path` using the `params` as GET parameters
+     * @param path The path of the REST API action (without leading slash '/')
+     * @param params An array of GET url parameters
+     * @returns The url to use for the API request
+     */
     getApiUrl(path, params) {
         if (params === undefined)
             params = [];
@@ -29173,6 +29196,10 @@ class RedmineApi {
         (0, core_1.debug)(`Generated Redmine API URL: ${url}`);
         return url;
     }
+    /**
+     * Get the account info for the authorized user
+     * @returns The account of the authorized user
+     */
     async myAccount() {
         const httpClient = new http_client_1.HttpClient();
         const response = await httpClient.getJson(this.getApiUrl('my/account.json'));
@@ -29181,6 +29208,11 @@ class RedmineApi {
         else
             throw new Error('Error while fetching account info');
     }
+    /**
+     *
+     * @param number The number of the issue to fetch
+     * @returns Either the issue or `null` if the issue was not found
+     */
     async getIssue(number) {
         const httpClient = new http_client_1.HttpClient();
         const response = await httpClient.getJson(this.getApiUrl(`issues/${number}.json`));
@@ -29191,6 +29223,10 @@ class RedmineApi {
         else
             throw new Error(`Error while fetching issue ${number}`);
     }
+    /**
+     * Get the API url without a slash '/' at the end
+     * @returns The API url
+     */
     getUrl() {
         return this.url;
     }

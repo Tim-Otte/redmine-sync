@@ -12,6 +12,12 @@ export class RedmineApi {
     this.apiKey = apiKey
   }
 
+  /**
+   * Creates an API url for the given `path` using the `params` as GET parameters
+   * @param path The path of the REST API action (without leading slash '/')
+   * @param params An array of GET url parameters
+   * @returns The url to use for the API request
+   */
   private getApiUrl(
     path: string,
     params?: { key: string; value: string }[]
@@ -23,6 +29,10 @@ export class RedmineApi {
     return url
   }
 
+  /**
+   * Get the account info for the authorized user
+   * @returns The account of the authorized user
+   */
   async myAccount(): Promise<MyAccount> {
     const httpClient = new HttpClient()
     const response = await httpClient.getJson<MyAccount>(
@@ -34,6 +44,11 @@ export class RedmineApi {
     else throw new Error('Error while fetching account info')
   }
 
+  /**
+   *
+   * @param number The number of the issue to fetch
+   * @returns Either the issue or `null` if the issue was not found
+   */
   async getIssue(number: number): Promise<Issue | null> {
     const httpClient = new HttpClient()
     const response = await httpClient.getJson<Issue>(
@@ -45,6 +60,10 @@ export class RedmineApi {
     else throw new Error(`Error while fetching issue ${number}`)
   }
 
+  /**
+   * Get the API url without a slash '/' at the end
+   * @returns The API url
+   */
   getUrl(): string {
     return this.url
   }

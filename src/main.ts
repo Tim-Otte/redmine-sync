@@ -26,7 +26,10 @@ export async function run(): Promise<void> {
     core.endGroup()
 
     core.startGroup('Fetching pull request info')
-    const issueNumber = await getIssueNumberFromPullRequest(pullRequest.number)
+    const issueNumber = await getIssueNumberFromPullRequest(
+      GITHUB_TOKEN,
+      pullRequest.number
+    )
 
     if (issueNumber === null) {
       core.info('Could not find ticket number. Exiting...')
@@ -74,18 +77,15 @@ async function updatePullRequestFromRedmineIssue(
       markdown.noteAlert(
         `**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`
       ) +
-      markdown.LF +
+      markdown.LINE_BREAK +
       issue.issue.description
   })
 
   if (updateStatus.status === HttpCodes.OK) {
     core.info(`Successfully updated pull request #${pullNumber}`)
-  } else {
-    return
-  }
+  } else return
 
   const label = getLabelFromIssue(issue)
-
   if (label !== null) {
     const labelUpdateStatus = await getOctokit(token).rest.issues.addLabels({
       owner: context.repo.owner,
@@ -134,11 +134,10 @@ async function testRedmineApi(redmineApi: RedmineApi): Promise<void> {
 }
 
 async function getIssueNumberFromPullRequest(
+  token: string,
   pullNumber: number
 ): Promise<number | null> {
-  const pullRequest = await getOctokit(
-    core.getInput('GITHUB_TOKEN', { required: true })
-  ).rest.pulls.get({
+  const pullRequest = await getOctokit(token).rest.pulls.get({
     owner: context.repo.owner,
     repo: context.repo.repo,
     pull_number: pullNumber
