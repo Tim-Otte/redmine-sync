@@ -98,7 +98,7 @@ async function updatePullRequestFromRedmineIssue(
   }
 ): Promise<void> {
   const alert = markdown.noteAlert(
-    `**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`
+    `**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}${options.updateTitle ? '' : ` - *${issue.issue.subject}*`}`
   )
 
   let body: string | undefined
@@ -110,13 +110,14 @@ async function updatePullRequestFromRedmineIssue(
   ) {
     body =
       alert +
+      markdown.LINE_BREAK +
       (pullBody + markdown.LINE_BREAK ?? '') +
-      markdown.section('Beschreibung aus Redmine', issue.issue.subject)
+      markdown.section('Beschreibung aus Redmine', issue.issue.description)
   } else if (
     options.bodyUpdateType === BodyUpdateType.Replace ||
     pullBody === null
   ) {
-    body = alert + markdown.LINE_BREAK + issue.issue.subject
+    body = alert + markdown.LINE_BREAK + issue.issue.description
   }
 
   const updateStatus = await getOctokit(token).rest.pulls.update({

@@ -29072,7 +29072,7 @@ async function run() {
 }
 exports.run = run;
 async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, pullBody, issue, options) {
-    const alert = markdown.noteAlert(`**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`);
+    const alert = markdown.noteAlert(`**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}${options.updateTitle ? '' : ` - *${issue.issue.subject}*`}`);
     let body;
     if (options.bodyUpdateType === BodyUpdateType.None) {
         body = undefined;
@@ -29081,12 +29081,13 @@ async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, 
         pullBody !== null) {
         body =
             alert +
+                markdown.LINE_BREAK +
                 (pullBody + markdown.LINE_BREAK ?? '') +
-                markdown.section('Beschreibung aus Redmine', issue.issue.subject);
+                markdown.section('Beschreibung aus Redmine', issue.issue.description);
     }
     else if (options.bodyUpdateType === BodyUpdateType.Replace ||
         pullBody === null) {
-        body = alert + markdown.LINE_BREAK + issue.issue.subject;
+        body = alert + markdown.LINE_BREAK + issue.issue.description;
     }
     const updateStatus = await (0, github_1.getOctokit)(token).rest.pulls.update({
         owner: github_1.context.repo.owner,
