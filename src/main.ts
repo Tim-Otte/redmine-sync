@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 import { RedmineApi } from './redmine-api'
+import * as markdown from './markdown'
 import { HttpCodes } from '@actions/http-client'
 import { Issue } from './redmine-models/issue'
 
@@ -11,31 +12,47 @@ import { Issue } from './redmine-models/issue'
 export async function run(): Promise<void> {
   // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
   try {
-    const pullNumber = getPullNumber()
+    const REDMINE_URL = core.getInput('redmine-url', { required: true })
+    const REDMINE_API_KEY = core.getInput('redmine-api-key', { required: true })
+    const GITHUB_TOKEN = core.getInput('GITHUB_TOKEN', { required: true })
 
-    if (pullNumber === null) {
-      core.setFailed('Could not find the number of the pull request')
+    core.startGroup('Checking action type')
+    const pullRequest = context.payload.pull_request
+
+    if (pullRequest === undefined) {
+      core.setFailed('This action can only be run on Pull Requests')
       return
     }
+    core.endGroup()
 
-    const issueNumber = await getIssueNumberFromPullRequest(pullNumber)
+    core.startGroup('Fetching pull request info')
+    const issueNumber = await getIssueNumberFromPullRequest(pullRequest.number)
 
     if (issueNumber === null) {
       core.info('Could not find ticket number. Exiting...')
       return
     }
+    core.endGroup()
 
-    const redmineApi = getRemineApi()
-
+    core.startGroup('Redmine API setup/test')
+    const redmineApi = new RedmineApi(REDMINE_URL, REDMINE_API_KEY)
     await testRedmineApi(redmineApi)
+    core.endGroup()
 
     // Fetching the infos for the issue
+    core.startGroup('Retrieve issue from Redmine and update pull request')
     const issue = await redmineApi.getIssue(issueNumber)
     if (issue === null) {
       core.info(`Could not find Redmine issue ${issueNumber}`)
     } else {
-      await updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue)
+      await updatePullRequestFromRedmineIssue(
+        GITHUB_TOKEN,
+        redmineApi.getUrl(),
+        pullRequest.number,
+        issue
+      )
     }
+    core.endGroup()
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
@@ -43,22 +60,56 @@ export async function run(): Promise<void> {
 }
 
 async function updatePullRequestFromRedmineIssue(
+  token: string,
+  redmineUrl: string,
   pullNumber: number,
-  issueNumber: number,
   issue: Issue
 ): Promise<void> {
-  const updateStatus = await getOctokit(
-    core.getInput('GITHUB_TOKEN', { required: true })
-  ).rest.pulls.update({
+  const updateStatus = await getOctokit(token).rest.pulls.update({
     owner: context.repo.owner,
     repo: context.repo.repo,
     pull_number: pullNumber,
-    title: `#${issueNumber} ${issue.issue.subject}`,
-    body: issue.issue.description
+    title: `${issue.issue.tracker.name} #${issue.issue.id}: ${issue.issue.subject}`,
+    body:
+      markdown.noteAlert(
+        `**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`
+      ) +
+      markdown.LF +
+      issue.issue.description
   })
 
   if (updateStatus.status === HttpCodes.OK) {
     core.info(`Successfully updated pull request #${pullNumber}`)
+  } else {
+    return
+  }
+
+  const label = getLabelFromIssue(issue)
+
+  if (label !== null) {
+    const labelUpdateStatus = await getOctokit(token).rest.issues.addLabels({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      issue_number: pullNumber,
+      labels: [label]
+    })
+
+    if (labelUpdateStatus.status === HttpCodes.OK) {
+      core.info(`Successfully updated label for pull request #${pullNumber}`)
+    }
+  }
+}
+
+function getLabelFromIssue(issue: Issue): string | null {
+  switch (issue.issue.tracker.name) {
+    case 'Change Request':
+      return 'change'
+    case 'Feature':
+      return 'feature'
+    case 'Bug':
+      return 'bug'
+    default:
+      return null
   }
 }
 
@@ -82,15 +133,6 @@ async function testRedmineApi(redmineApi: RedmineApi): Promise<void> {
   }
 }
 
-function getRemineApi(): RedmineApi {
-  core.debug('Initializing Redmine API...')
-  const redmineApi = new RedmineApi(
-    core.getInput('redmine-url', { required: true }),
-    core.getInput('redmine-api-key', { required: true })
-  )
-  return redmineApi
-}
-
 async function getIssueNumberFromPullRequest(
   pullNumber: number
 ): Promise<number | null> {
@@ -109,24 +151,9 @@ async function getIssueNumberFromPullRequest(
 
     const result = /#(\d+)/g.exec(pullRequest.data.title)
     if (result != null) {
-      const [, issueNumberText] = result[0]
+      const [, issueNumberText] = result
       return parseInt(issueNumberText)
     }
   }
-  return null
-}
-
-function getPullNumber(): number | null {
-  if (context.eventName === 'pull_request') {
-    core.debug(
-      'This GitHub action has been started because a pull_request event has been triggered'
-    )
-    const result = /refs\/pull\/(\d+)\/merge/g.exec(context.ref)
-    if (result != null) {
-      const [, pullRequestIdText] = result
-      return parseInt(pullRequestIdText)
-    }
-  }
-
   return null
 }

@@ -44,4 +44,8 @@ export class RedmineApi {
     else if (response.statusCode === HttpCodes.NotFound) return null
     else throw new Error(`Error while fetching issue ${number}`)
   }
+
+  getUrl(): string {
+    return this.url
+  }
 }
