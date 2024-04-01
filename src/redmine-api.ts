@@ -17,12 +17,10 @@ export class RedmineApi {
     params?: { key: string; value: string }[]
   ): string {
     if (params === undefined) params = []
-    debug(
-      `Generated Redmine API URL: ${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
-    )
-    // Add API key to params
     params.push({ key: 'key', value: this.apiKey })
-    return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
+    const url = `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
+    debug(`Generated Redmine API URL: ${url}`)
+    return url
   }
 
   async myAccount(): Promise<MyAccount> {

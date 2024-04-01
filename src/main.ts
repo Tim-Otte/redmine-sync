@@ -48,7 +48,7 @@ async function updatePullRequestFromRedmineIssue(
   issue: Issue
 ): Promise<void> {
   const updateStatus = await getOctokit(
-    core.getInput('GITHUB_TOKEN')
+    core.getInput('GITHUB_TOKEN', { required: true })
   ).rest.pulls.update({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -85,8 +85,8 @@ async function testRedmineApi(redmineApi: RedmineApi): Promise<void> {
 function getRemineApi(): RedmineApi {
   core.debug('Initializing Redmine API...')
   const redmineApi = new RedmineApi(
-    core.getInput('redmine-url'),
-    core.getInput('redmine-api_key')
+    core.getInput('redmine-url', { required: true }),
+    core.getInput('redmine-api-key', { required: true })
   )
   return redmineApi
 }
@@ -95,7 +95,7 @@ async function getIssueNumberFromPullRequest(
   pullNumber: number
 ): Promise<number | null> {
   const pullRequest = await getOctokit(
-    core.getInput('GITHUB_TOKEN')
+    core.getInput('GITHUB_TOKEN', { required: true })
   ).rest.pulls.get({
     owner: context.repo.owner,
     repo: context.repo.repo,
