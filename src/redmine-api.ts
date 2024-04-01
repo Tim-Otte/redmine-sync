@@ -1,3 +1,4 @@
+import { debug } from '@actions/core'
 import { HttpClient, HttpCodes } from '@actions/http-client'
 import { MyAccount } from './redmine-models/my-account'
 import { Issue } from './redmine-models/issue'
@@ -16,6 +17,10 @@ export class RedmineApi {
     params?: { key: string; value: string }[]
   ): string {
     if (params === undefined) params = []
+    debug(
+      `Generated Redmine API URL: ${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
+    )
+    // Add API key to params
     params.push({ key: 'key', value: this.apiKey })
     return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`
   }
@@ -23,7 +28,7 @@ export class RedmineApi {
   async myAccount(): Promise<MyAccount> {
     const httpClient = new HttpClient()
     const response = await httpClient.getJson<MyAccount>(
-      this.getApiUrl('/my/account.json')
+      this.getApiUrl('my/account.json')
     )
 
     if (response.statusCode === HttpCodes.OK && response.result != null)
@@ -34,7 +39,7 @@ export class RedmineApi {
   async getIssue(number: number): Promise<Issue | null> {
     const httpClient = new HttpClient()
     const response = await httpClient.getJson<Issue>(
-      this.getApiUrl(`/issues/${number}.json`)
+      this.getApiUrl(`issues/${number}.json`)
     )
 
     if (response.statusCode === HttpCodes.OK) return response.result

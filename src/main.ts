@@ -53,8 +53,8 @@ async function updatePullRequestFromRedmineIssue(
     owner: context.repo.owner,
     repo: context.repo.repo,
     pull_number: pullNumber,
-    title: `#${issueNumber} ${issue.subject}`,
-    body: issue.description
+    title: `#${issueNumber} ${issue.issue.subject}`,
+    body: issue.issue.description
   })
 
   if (updateStatus.status === HttpCodes.OK) {
@@ -67,10 +67,10 @@ async function testRedmineApi(redmineApi: RedmineApi): Promise<void> {
   try {
     const account = await redmineApi.myAccount()
     core.info(
-      `Successfully connected to Redmine. Hi ${account.firstname} ${account.lastname}!`
+      `Successfully connected to Redmine. Hi ${account.user.firstname} ${account.user.lastname}!`
     )
 
-    if (account.admin)
+    if (account.user.admin)
       core.warning(
         'Its not recommended to use a Redmine admin account for this action'
       )

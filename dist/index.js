@@ -29046,8 +29046,8 @@ async function updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue)
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         pull_number: pullNumber,
-        title: `#${issueNumber} ${issue.subject}`,
-        body: issue.description
+        title: `#${issueNumber} ${issue.issue.subject}`,
+        body: issue.issue.description
     });
     if (updateStatus.status === http_client_1.HttpCodes.OK) {
         core.info(`Successfully updated pull request #${pullNumber}`);
@@ -29057,8 +29057,8 @@ async function testRedmineApi(redmineApi) {
     core.debug(`Testing connection to redmine instance...`);
     try {
         const account = await redmineApi.myAccount();
-        core.info(`Successfully connected to Redmine. Hi ${account.firstname} ${account.lastname}!`);
-        if (account.admin)
+        core.info(`Successfully connected to Redmine. Hi ${account.user.firstname} ${account.user.lastname}!`);
+        if (account.user.admin)
             core.warning('Its not recommended to use a Redmine admin account for this action');
     }
     catch (error) {
@@ -29111,6 +29111,7 @@ function getPullNumber() {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RedmineApi = void 0;
+const core_1 = __nccwpck_require__(2186);
 const http_client_1 = __nccwpck_require__(6255);
 class RedmineApi {
     url;
@@ -29122,12 +29123,14 @@ class RedmineApi {
     getApiUrl(path, params) {
         if (params === undefined)
             params = [];
+        (0, core_1.debug)(`Generated Redmine API URL: ${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`);
+        // Add API key to params
         params.push({ key: 'key', value: this.apiKey });
         return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`;
     }
     async myAccount() {
         const httpClient = new http_client_1.HttpClient();
-        const response = await httpClient.getJson(this.getApiUrl('/my/account.json'));
+        const response = await httpClient.getJson(this.getApiUrl('my/account.json'));
         if (response.statusCode === http_client_1.HttpCodes.OK && response.result != null)
             return response.result;
         else
@@ -29135,7 +29138,7 @@ class RedmineApi {
     }
     async getIssue(number) {
         const httpClient = new http_client_1.HttpClient();
-        const response = await httpClient.getJson(this.getApiUrl(`/issues/${number}.json`));
+        const response = await httpClient.getJson(this.getApiUrl(`issues/${number}.json`));
         if (response.statusCode === http_client_1.HttpCodes.OK)
             return response.result;
         else if (response.statusCode === http_client_1.HttpCodes.NotFound)

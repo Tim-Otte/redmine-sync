@@ -17,6 +17,10 @@ inputs:
   redmine-api-key:
     description: 'The API key for your Redmine instance'
     required: true
+  GITHUB_TOKEN:
+    description: 'GITHUB TOKEN'
+    required: true
+    default: ${{ github.token }}
 
 runs:
   using: node20
