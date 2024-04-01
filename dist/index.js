@@ -29042,7 +29042,7 @@ async function run() {
 }
 exports.run = run;
 async function updatePullRequestFromRedmineIssue(pullNumber, issueNumber, issue) {
-    const updateStatus = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN')).rest.pulls.update({
+    const updateStatus = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN', { required: true })).rest.pulls.update({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         pull_number: pullNumber,
@@ -29070,11 +29070,11 @@ async function testRedmineApi(redmineApi) {
 }
 function getRemineApi() {
     core.debug('Initializing Redmine API...');
-    const redmineApi = new redmine_api_1.RedmineApi(core.getInput('redmine-url'), core.getInput('redmine-api_key'));
+    const redmineApi = new redmine_api_1.RedmineApi(core.getInput('redmine-url', { required: true }), core.getInput('redmine-api-key', { required: true }));
     return redmineApi;
 }
 async function getIssueNumberFromPullRequest(pullNumber) {
-    const pullRequest = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN')).rest.pulls.get({
+    const pullRequest = await (0, github_1.getOctokit)(core.getInput('GITHUB_TOKEN', { required: true })).rest.pulls.get({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         pull_number: pullNumber
@@ -29123,10 +29123,10 @@ class RedmineApi {
     getApiUrl(path, params) {
         if (params === undefined)
             params = [];
-        (0, core_1.debug)(`Generated Redmine API URL: ${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`);
-        // Add API key to params
         params.push({ key: 'key', value: this.apiKey });
-        return `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`;
+        const url = `${this.url}/${path}?${params.map(p => `${p.key}=${p.value}`).join('&')}`;
+        (0, core_1.debug)(`Generated Redmine API URL: ${url}`);
+        return url;
     }
     async myAccount() {
         const httpClient = new http_client_1.HttpClient();
