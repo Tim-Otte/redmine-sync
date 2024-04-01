@@ -29084,7 +29084,8 @@ async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, 
                 (pullBody + markdown.LINE_BREAK ?? '') +
                 markdown.section('Beschreibung aus Redmine', issue.issue.subject);
     }
-    else if (options.bodyUpdateType === BodyUpdateType.Replace) {
+    else if (options.bodyUpdateType === BodyUpdateType.Replace ||
+        pullBody === null) {
         body = alert + markdown.LINE_BREAK + issue.issue.subject;
     }
     const updateStatus = await (0, github_1.getOctokit)(token).rest.pulls.update({

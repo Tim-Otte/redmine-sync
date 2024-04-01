@@ -112,7 +112,10 @@ async function updatePullRequestFromRedmineIssue(
       alert +
       (pullBody + markdown.LINE_BREAK ?? '') +
       markdown.section('Beschreibung aus Redmine', issue.issue.subject)
-  } else if (options.bodyUpdateType === BodyUpdateType.Replace) {
+  } else if (
+    options.bodyUpdateType === BodyUpdateType.Replace ||
+    pullBody === null
+  ) {
     body = alert + markdown.LINE_BREAK + issue.issue.subject
   }
 
