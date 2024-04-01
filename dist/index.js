@@ -29007,6 +29007,12 @@ const github_1 = __nccwpck_require__(5438);
 const redmine_api_1 = __nccwpck_require__(9513);
 const markdown = __importStar(__nccwpck_require__(4270));
 const http_client_1 = __nccwpck_require__(6255);
+var BodyUpdateType;
+(function (BodyUpdateType) {
+    BodyUpdateType["Append"] = "append";
+    BodyUpdateType["Replace"] = "replace";
+    BodyUpdateType["None"] = "none";
+})(BodyUpdateType || (BodyUpdateType = {}));
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
@@ -29017,7 +29023,16 @@ async function run() {
         const REDMINE_URL = core.getInput('redmine-url', { required: true });
         const REDMINE_API_KEY = core.getInput('redmine-api-key', { required: true });
         const GITHUB_TOKEN = core.getInput('GITHUB_TOKEN', { required: true });
-        core.startGroup('Checking action type');
+        const UPDATE_TITLE = core.getBooleanInput('update-title');
+        const ADD_ISSUE_DESCRIPTION = core.getInput('add-issue-description');
+        core.startGroup('Validate inputs / Check action type');
+        if (!Object.values(BodyUpdateType)
+            .map(x => x.toString())
+            .includes(ADD_ISSUE_DESCRIPTION.toLowerCase())) {
+            core.setFailed(`Invalid value of input 'add-issue-description'`);
+            return;
+        }
+        const bodyUpdateType = ADD_ISSUE_DESCRIPTION.toLowerCase();
         const pullRequest = github_1.context.payload.pull_request;
         if (pullRequest === undefined) {
             core.setFailed('This action can only be run on Pull Requests');
@@ -29025,7 +29040,7 @@ async function run() {
         }
         core.endGroup();
         core.startGroup('Fetching pull request info');
-        const issueNumber = await getIssueNumberFromPullRequest(GITHUB_TOKEN, pullRequest.number);
+        const { issueNumber, pullBody } = await getIssueNumberAndBodyFromPullRequest(GITHUB_TOKEN, pullRequest.number);
         if (issueNumber === null) {
             core.info('Could not find ticket number. Exiting...');
             return;
@@ -29042,7 +29057,10 @@ async function run() {
             core.info(`Could not find Redmine issue ${issueNumber}`);
         }
         else {
-            await updatePullRequestFromRedmineIssue(GITHUB_TOKEN, redmineApi.getUrl(), pullRequest.number, issue);
+            await updatePullRequestFromRedmineIssue(GITHUB_TOKEN, redmineApi.getUrl(), pullRequest.number, pullBody, issue, {
+                updateTitle: UPDATE_TITLE,
+                bodyUpdateType
+            });
         }
         core.endGroup();
     }
@@ -29053,15 +29071,30 @@ async function run() {
     }
 }
 exports.run = run;
-async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, issue) {
+async function updatePullRequestFromRedmineIssue(token, redmineUrl, pullNumber, pullBody, issue, options) {
+    const alert = markdown.noteAlert(`**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`);
+    let body;
+    if (options.bodyUpdateType === BodyUpdateType.None) {
+        body = undefined;
+    }
+    else if (options.bodyUpdateType === BodyUpdateType.Append &&
+        pullBody !== null) {
+        body =
+            alert +
+                (pullBody + markdown.LINE_BREAK ?? '') +
+                markdown.section('Beschreibung aus Redmine', issue.issue.subject);
+    }
+    else if (options.bodyUpdateType === BodyUpdateType.Replace) {
+        body = alert + markdown.LINE_BREAK + issue.issue.subject;
+    }
     const updateStatus = await (0, github_1.getOctokit)(token).rest.pulls.update({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
         pull_number: pullNumber,
-        title: `${issue.issue.tracker.name} #${issue.issue.id}: ${issue.issue.subject}`,
-        body: markdown.noteAlert(`**Redmine-Ticket:** ${markdown.link(`#${issue.issue.id}`, `${redmineUrl}/issues/${issue.issue.id}`)}`) +
-            markdown.LINE_BREAK +
-            issue.issue.description
+        title: options.updateTitle
+            ? `${issue.issue.tracker.name} #${issue.issue.id}: ${issue.issue.subject}`
+            : undefined,
+        body
     });
     if (updateStatus.status === http_client_1.HttpCodes.OK) {
         core.info(`Successfully updated pull request #${pullNumber}`);
@@ -29108,7 +29141,7 @@ async function testRedmineApi(redmineApi) {
         throw new Error(errorMessage);
     }
 }
-async function getIssueNumberFromPullRequest(token, pullNumber) {
+async function getIssueNumberAndBodyFromPullRequest(token, pullNumber) {
     const pullRequest = await (0, github_1.getOctokit)(token).rest.pulls.get({
         owner: github_1.context.repo.owner,
         repo: github_1.context.repo.repo,
@@ -29119,10 +29152,13 @@ async function getIssueNumberFromPullRequest(token, pullNumber) {
         const result = /#(\d+)/g.exec(pullRequest.data.title);
         if (result != null) {
             const [, issueNumberText] = result;
-            return parseInt(issueNumberText);
+            return {
+                issueNumber: parseInt(issueNumberText),
+                pullBody: pullRequest.data.body
+            };
         }
     }
-    return null;
+    return { issueNumber: null, pullBody: null };
 }
 
 
@@ -29134,7 +29170,7 @@ async function getIssueNumberFromPullRequest(token, pullNumber) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.link = exports.noteAlert = exports.LINE_BREAK = exports.LF = void 0;
+exports.section = exports.link = exports.noteAlert = exports.LINE_BREAK = exports.LF = void 0;
 /**
  * Line feed
  */
@@ -29162,6 +29198,17 @@ function link(label, url) {
     return `[${label}](${url})`;
 }
 exports.link = link;
+/**
+ * Create a section
+ * @param title The title of the section
+ * @param content The content to display in the collapsed section
+ * @returns The GitHub markdown string for a section
+ * @see https://docs.github.com/de/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections
+ */
+function section(title, content) {
+    return `<details>${exports.LF}<summary>${title}</summary>${exports.LF}${content}${exports.LF}</details>`;
+}
+exports.section = section;
 
 
 /***/ }),

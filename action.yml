@@ -21,6 +21,15 @@ inputs:
     description: 'GITHUB TOKEN'
     required: true
     default: ${{ github.token }}
+  update-title:
+    description:
+      Should the action update the title of the pull request? `true` or `false`
+    default: 'true'
+  add-issue-description:
+    description:
+      Should the body of the pull request be appended with / replaced by the
+      issue description? `append` or `replace` or `none`
+    default: 'replace'
 
 runs:
   using: node20
