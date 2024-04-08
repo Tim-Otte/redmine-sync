@@ -44,7 +44,7 @@ required, _italic_ = provided by GitHub, defaults to `${{ github.token }}`)
 
 | Name                  | Type   | Description                                                                          |
 | --------------------- | ------ | ------------------------------------------------------------------------------------ |
-| **redmine-url**       | string | The url of your Redmine instance, e.g `https://example.com/redmine`                  |
+| **redmine-url**       | string | The URL of your Redmine instance, e.g `https://example.com/redmine`                  |
 | **redmine-api-key**   | string | The API key of your Redmine account (:warning: do not use admin accounts)            |
 | _GITHUB_TOKEN_        | string | The GitHub API token to use to update the pull requests                              |
 | update-title          | bool   | Set this to `true` if you want to automatically update the title, otherwise to false |
